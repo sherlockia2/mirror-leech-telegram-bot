@@ -2,7 +2,7 @@ class _BotCommands:
     def __init__(self):
         self.StartCommand = 'start'
         self.MirrorCommand = 'mirror'
-        self.UnzipMirrorCommand = 'unzipmirror'
+        self.UnzipMirrorCommand = 'umirror'
         self.ZipMirrorCommand = 'zipmirror'
         self.CancelMirror = 'cancel'
         self.CancelAllCommand = 'cancelall'
@@ -33,7 +33,7 @@ class _BotCommands:
         self.LeechSetCommand = 'leechset'
         self.SetThumbCommand = 'setthumb'
         self.LeechCommand = 'leech'
-        self.UnzipLeechCommand = 'unzipleech'
+        self.UnzipLeechCommand = 'uleech'
         self.ZipLeechCommand = 'zipleech'
         self.QbLeechCommand = 'qbleech'
         self.QbUnzipLeechCommand = 'qbunzipleech'
