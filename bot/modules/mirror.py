@@ -211,14 +211,14 @@ class MirrorListener(listeners.MirrorListeners):
                 uname = f'<a href="tg://user?id={self.message.from_user.id}">{self.message.from_user.first_name}</a>'
             count = len(files)
             if self.message.chat.type == 'private':
-                msg = f'<b>Name: </b><code>{link}</code>\n'
+                msg = f'<code>{link}</code>\n'
                 msg += f'<b>Total Files: </b>{count}'
                 if typ != 0:
                     msg += f'\n<b>Corrupted Files: </b>{typ}'
                 sendMessage(msg, self.bot, self.update)
             else:
                 chat_id = str(self.message.chat.id)[4:]
-                msg = f"<b>Name: </b><a href='https://t.me/c/{chat_id}/{self.uid}'>{link}</a>\n"
+                msg = f"<a href='https://t.me/c/{chat_id}/{self.uid}'>{link}</a>\n"
                 msg += f'<b>Total Files: </b>{count}\n'
                 if typ != 0:
                     msg += f'<b>Corrupted Files: </b>{typ}\n'
@@ -228,10 +228,12 @@ class MirrorListener(listeners.MirrorListeners):
                     msg_id = files[item]
                     link = f"https://t.me/c/{chat_id}/{msg_id}"
                     fmsg += f"{index}. <a href='{link}'>{item}</a>\n"
-                    if len(fmsg) > 3900:
+                    if len(fmsg.encode('utf-8') + msg.encode('utf-8')) > 4000:
+                        time.sleep(1.5)
                         sendMessage(msg + fmsg, self.bot, self.update)
                         fmsg = ''
                 if fmsg != '':
+                    time.sleep(1.5)
                     sendMessage(msg + fmsg, self.bot, self.update)
             with download_dict_lock:
                 try:
@@ -246,7 +248,7 @@ class MirrorListener(listeners.MirrorListeners):
                 update_all_messages()
             return
         with download_dict_lock:
-            msg = f'<b>Name: </b><code>{download_dict[self.uid].name()}</code>\n\n<b>Size: </b>{size}'
+            msg = f'<code>{download_dict[self.uid].name()}</code>\n\n<b>Size: </b>{size}'
             if os.path.isdir(f'{DOWNLOAD_DIR}/{self.uid}/{download_dict[self.uid].name()}'):
                 msg += '\n\n<b>Type: </b>Folder'
                 msg += f'\n<b>SubFolders: </b>{folders}'
@@ -330,11 +332,11 @@ class MirrorListener(listeners.MirrorListeners):
 def _mirror(bot, update, isZip=False, extract=False, isQbit=False, isLeech=False):
     mesg = update.message.text.split('\n')
     message_args = mesg[0].split(' ', maxsplit=1)
-    name_args = mesg[0].split('|')
+    name_args = mesg[0].split('|', maxsplit=2)
     qbitsel = False
     try:
         link = message_args[1]
-        if link == "s":
+        if link.startswith("s ") or link == "s":
             qbitsel = True
             message_args = mesg[0].split(' ', maxsplit=2)
             link = message_args[2]
@@ -345,7 +347,7 @@ def _mirror(bot, update, isZip=False, extract=False, isQbit=False, isLeech=False
     try:
         name = name_args[1]
         name = name.strip()
-        if name.startswith("pswd: "):
+        if "pswd:" in name_args[0]:
             name = ''
     except IndexError:
         name = ''
@@ -358,11 +360,13 @@ def _mirror(bot, update, isZip=False, extract=False, isQbit=False, isLeech=False
     if ussr != '' and pssw != '':
         link = link.split("://", maxsplit=1)
         link = f'{link[0]}://{ussr}:{pssw}@{link[1]}'
-    pswd = re.search('(?<=pswd: )(.*)', update.message.text)
-    if pswd is not None:
-      pswd = pswd.groups()
-      pswd = " ".join(pswd)
+    pswd = mesg[0].split('pswd: ')
+    if len(pswd) > 1:
+        pswd = pswd[1]
+    else:
+        pswd = None
     link = re.split(r"pswd:|\|", link)[0]
+    link = link.strip()
     reply_to = update.message.reply_to_message
     if reply_to is not None:
         file = None
@@ -384,8 +388,7 @@ def _mirror(bot, update, isZip=False, extract=False, isQbit=False, isLeech=False
 
             elif isQbit:
                 file_name = str(time.time()).replace(".", "") + ".torrent"
-                file.get_file().download(custom_path=f"{file_name}")
-                link = f"{file_name}"
+                link = file.get_file().download(custom_path=file_name)
             elif file.mime_type != "application/x-bittorrent":
                 listener = MirrorListener(bot, update, pswd, isZip, extract, isLeech=isLeech)
                 tg_downloader = TelegramDownloadHelper(listener)
